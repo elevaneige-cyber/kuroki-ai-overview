@@ -274,9 +274,53 @@ body {
   color: var(--gold); font-weight: 700;
 }
 
-/* Hide diagram (SVG) tabs — 図解は非表示にしてビジュアルのみ */
-.tab-btn[onclick*="viz-"] { display: none; }
+/* === タブ廃止 → 画像常時表示 + 「もっと詳しく」ボタン === */
+.tab-btn[onclick*="viz-"],
+.tab-btn[onclick*="image-"] { display: none !important; }
 .tab-panel[id^="viz-"] { display: none !important; }
+.tab-panel[id^="image-"] { display: block !important; padding: 22px 40px 0; }
+.hook-card .tabs { display: none; }
+
+/* タブナビをボタン風に */
+.tabs {
+  border-bottom: none;
+  padding: 4px 40px 0;
+  margin-top: 6px;
+}
+.tab-btn[onclick*="det-"] {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-deep) 100%);
+  color: white;
+  border: none;
+  padding: 11px 22px;
+  border-radius: 100px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13.5px;
+  letter-spacing: 0.3px;
+  margin: 12px 0 0 0;
+  box-shadow: 0 2px 8px rgba(200, 155, 74, 0.28);
+  transition: all 0.18s;
+}
+.tab-btn[onclick*="det-"]:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(200, 155, 74, 0.4);
+}
+.tab-btn[onclick*="det-"]::after { content: ' ▼'; font-size: 11px; opacity: 0.85; }
+.tab-btn[onclick*="det-"].active { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%); }
+.tab-btn[onclick*="det-"].active::after { content: ' ▲'; }
+.tab-panel[id^="det-"] { padding: 16px 40px 24px; }
+
+/* ヒーローの画像パネルのpadding調整 */
+.hook-card .tab-panel[id="image-hero"] { padding: 16px 40px 0; }
+@media (max-width: 640px) {
+  .tab-panel[id^="image-"] { padding-left: 24px; padding-right: 24px; }
+  .tab-panel[id^="det-"] { padding-left: 24px; padding-right: 24px; }
+  .tabs { padding-left: 24px; padding-right: 24px; }
+}
 
 @media print {
   .toolbar, .intent, .memo-card, .tabs { display: none; }
@@ -305,7 +349,7 @@ body {
   <div class="hero">
     <div class="eyebrow">For Forwarding ・ 不動産会社 → 医師向けセミナー登壇 想定</div>
     <h1>クロキが <span class="accent">AI</span> で<br>何をやっているか</h1>
-    <div class="subhead">図解で一望できる版です。詳しい説明は各カードの「📝 詳しく」タブから。</div>
+    <div class="subhead">図解で一望できる版です。詳しい説明は各カードの「📝 もっと詳しく見る」タブから。</div>
     <div class="meta-row">
       <span>2026-04-30 ・ 株式会社ElevaNeige クロキ</span>
     </div>
@@ -427,7 +471,7 @@ body {
     <div class="tabs">
       <button class="tab-btn active" onclick="showTab(this, 'image-1')">🎨 ビジュアル</button>
       <button class="tab-btn" onclick="showTab(this, 'viz-1')">📊 図解</button>
-      <button class="tab-btn" onclick="showTab(this, 'det-1')">📝 詳しく</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-1')">📝 もっと詳しく見る</button>
     </div>
     <div class="tab-panel active" id="image-1">
       <div class="figure"><img src="_assets/ai_business_explanation/02_nara.png" alt="奈良議員アウトリーチ" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
@@ -579,7 +623,7 @@ body {
     <div class="tabs">
       <button class="tab-btn active" onclick="showTab(this, 'image-2')">🎨 ビジュアル</button>
       <button class="tab-btn" onclick="showTab(this, 'viz-2')">📊 図解</button>
-      <button class="tab-btn" onclick="showTab(this, 'det-2')">📝 詳しく</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-2')">📝 もっと詳しく見る</button>
     </div>
     <div class="tab-panel active" id="image-2">
       <div class="figure"><img src="_assets/ai_business_explanation/03_sns.png" alt="SNSを全部1人で埋める仕組み" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
@@ -697,7 +741,7 @@ body {
     <div class="tabs">
       <button class="tab-btn active" onclick="showTab(this, 'image-3')">🎨 ビジュアル</button>
       <button class="tab-btn" onclick="showTab(this, 'viz-3')">📊 図解</button>
-      <button class="tab-btn" onclick="showTab(this, 'det-3')">📝 詳しく</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-3')">📝 もっと詳しく見る</button>
     </div>
     <div class="tab-panel active" id="image-3">
       <div class="figure"><img src="_assets/ai_business_explanation/04_video.png" alt="動画編集パイプライン" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
@@ -805,7 +849,7 @@ body {
     <div class="tabs">
       <button class="tab-btn active" onclick="showTab(this, 'image-4')">🎨 ビジュアル</button>
       <button class="tab-btn" onclick="showTab(this, 'viz-4')">📊 図解</button>
-      <button class="tab-btn" onclick="showTab(this, 'det-4')">📝 詳しく</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-4')">📝 もっと詳しく見る</button>
     </div>
     <div class="tab-panel active" id="image-4">
       <div class="figure"><img src="_assets/ai_business_explanation/05_gmail.png" alt="Gmail/カレンダー連携" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
@@ -901,7 +945,7 @@ body {
     <div class="tabs">
       <button class="tab-btn active" onclick="showTab(this, 'image-5')">🎨 ビジュアル</button>
       <button class="tab-btn" onclick="showTab(this, 'viz-5')">📊 図解</button>
-      <button class="tab-btn" onclick="showTab(this, 'det-5')">📝 詳しく</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-5')">📝 もっと詳しく見る</button>
     </div>
     <div class="tab-panel active" id="image-5">
       <div class="figure"><img src="_assets/ai_business_explanation/07_why.png" alt="自社で実証→クライアントへ" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
@@ -1030,7 +1074,7 @@ body {
     <div class="tabs">
       <button class="tab-btn active" onclick="showTab(this, 'image-6')">🎨 ビジュアル</button>
       <button class="tab-btn" onclick="showTab(this, 'viz-6')">📊 図解</button>
-      <button class="tab-btn" onclick="showTab(this, 'det-6')">📝 詳しく</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-6')">📝 もっと詳しく見る</button>
     </div>
     <div class="tab-panel active" id="image-6">
       <div class="figure"><img src="_assets/ai_business_explanation/06_industry.png" alt="他業種への応用" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
@@ -1160,7 +1204,7 @@ body {
     </div>
     <div class="tabs">
       <button class="tab-btn active" onclick="showTab(this, 'image-7')">🎨 ビジュアル</button>
-      <button class="tab-btn" onclick="showTab(this, 'det-7')">📝 詳しく</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-7')">📝 もっと詳しく見る</button>
     </div>
     <div class="tab-panel active" id="image-7">
       <div class="figure"><img src="_assets/ai_business_explanation/08_anything.png" alt="アイデア次第で何でもできる" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
