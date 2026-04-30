@@ -359,7 +359,7 @@ body {
   <div class="meta-badge">
     <div class="mb-icon">⏱</div>
     <div class="mb-text">
-      <strong>※ ご参考まで：この資料そのものも、AIに指示を出して<u>約10分</u>で作成しています。</strong><br>
+      <strong>※ ご参考まで：この資料そのものも、AIに指示を出して<u>原型は30分ほど</u>でできました。その後の調整でプラス30分ほどかかっています。</strong><br>
       「AIが手足になる」というのが、こういう感覚です。
     </div>
   </div>
@@ -1265,11 +1265,19 @@ body {
 
 <script>
 function showTab(btn, panelId) {
+  const panel = document.getElementById(panelId);
+  // すでに開いていればトグルで閉じる
+  if (btn.classList.contains('active')) {
+    btn.classList.remove('active');
+    panel.classList.remove('active');
+    return;
+  }
+  // 同じカード内の他のdetタブを閉じる（image-は常時表示なので除外）
   const card = btn.closest('.card, .hook-card');
   card.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  card.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  card.querySelectorAll('.tab-panel:not([id^="image-"])').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
-  document.getElementById(panelId).classList.add('active');
+  panel.classList.add('active');
 }
 
 // Generate 100 person dots into the奈良 SVG
@@ -1301,7 +1309,7 @@ function copyAll(btn) {
     '■ 7. アイデア次第で、何でもできる'
   ];
   let out = '【クロキがAIで何をやっているか】\n\n';
-  out += '※ なお、この資料そのものも、AIに指示を出して約10分で作成しています。\n\n';
+  out += '※ なお、この資料そのものも、AIに指示を出して原型は30分ほどでできました（その後の調整でプラス30分ほど）。\n\n';
   order.forEach((id, i) => {
     const el = document.getElementById(id);
     if (!el) return;
