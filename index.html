@@ -274,10 +274,14 @@ body {
   color: var(--gold); font-weight: 700;
 }
 
+/* Hide diagram (SVG) tabs — 図解は非表示にしてビジュアルのみ */
+.tab-btn[onclick*="viz-"] { display: none; }
+.tab-panel[id^="viz-"] { display: none !important; }
+
 @media print {
   .toolbar, .intent, .memo-card, .tabs { display: none; }
   body { background: white; }
-  .tab-panel { display: block !important; padding: 16px 24px; }
+  .tab-panel:not([id^="viz-"]) { display: block !important; padding: 16px 24px; }
 }
 @media (max-width: 640px) {
   .hero { padding: 36px 28px 32px; }
@@ -1148,6 +1152,56 @@ body {
     </div>
   </div>
 
+  <!-- Card 7: アイデア次第で何でもできる -->
+  <div class="card featured">
+    <div class="card-head">
+      <span class="featured-tag">★ 自由度の話</span>
+      <div class="num-row"><div class="num">7</div><h2>アイデア次第で、何でもできる</h2></div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab(this, 'image-7')">🎨 ビジュアル</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-7')">📝 詳しく</button>
+    </div>
+    <div class="tab-panel active" id="image-7">
+      <div class="figure"><img src="_assets/ai_business_explanation/08_anything.png" alt="アイデア次第で何でもできる" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
+    </div>
+    <div class="tab-panel" id="det-7">
+      <div class="detail-panel" contenteditable="true" id="sec-7">
+        <p>ここまで <strong>事業向け</strong> の例で説明してきましたが、AIで作れるものは事業に限りません。<em>「やりたいことを言葉にできれば、AIがそれを形にしてくれる」</em>のが、いま起きている本質的な変化です。</p>
+        <p>身近で実際に動いているもので、こんな例があります。</p>
+        <ul>
+          <li><strong>同棲カップルの冷蔵庫シェアAI</strong> — 一緒に仕事しているメンバーが、彼女と同棲中に作ったツール。冷蔵庫の中身を写真で撮るだけでAIが自動で在庫管理し、買い物リストや今日の献立提案まで2人でシェアできる仕組み。</li>
+          <li><strong>競馬予想アプリ</strong> — 別のメンバーが趣味で作っているもの。過去レースのデータ・騎手・馬場状態を学習させた個人用の予想エンジン。</li>
+        </ul>
+        <p>つまり、<strong>医師の集患も、不動産の問い合わせ対応も、奈良の議員さんへの個別営業も、冷蔵庫の中身管理も、競馬の予想も、根っこは同じ</strong>です。「こういうことできたら便利やな」と思ったその瞬間に、形にできる時代になっています。</p>
+        <p>セミナーでは、こういう日常レベルの応用例も含めて「自分でも触ってみたい」と感じてもらえる内容にできます。</p>
+      </div>
+    </div>
+    <div class="intent">
+      <div class="intent-label">修正意図メモ</div>
+      <textarea placeholder=""></textarea>
+    </div>
+  </div>
+
+  <!-- Card 8: まとめ -->
+  <div class="card">
+    <div class="card-head">
+      <div class="num-row"><div class="num">8</div><h2>まとめ</h2></div>
+    </div>
+    <div class="tab-panel active" id="image-8" style="display: block; padding-top: 24px;">
+      <div class="viz-conclusion" style="font-family: 'Noto Serif JP', serif; font-size: 17px; font-weight: 700; padding: 28px 32px; background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 100%); color: white; border-radius: 14px; line-height: 1.85; position: relative; overflow: hidden; text-align: center;">
+        <span style="content: ''; position: absolute; top: 0; left: 0; bottom: 0; width: 4px; background: var(--gold); display: block;"></span>
+        <strong style="color: var(--gold); font-weight: 900;">「AIを使っている人」ではなく、<br>「AIで会社のオペレーション全体を回している人」</strong><br><br>
+        営業 → コンテンツ制作 → 配信 → 動画編集 → 日程調整 まで<br>1人で回せる仕組みを自社で運用中。<br>
+        <span style="margin-top: 14px; display: block; font-family: 'Noto Sans JP', sans-serif; font-size: 13.5px; opacity: 0.85; font-weight: 400;">医師・士業・不動産といった他業種にもそのまま応用でき、<br>セミナーでは「自分の業種でどう使えるか」を持ち帰っていただけます。</span>
+      </div>
+    </div>
+    <div class="intent">
+      <div class="intent-label">修正意図メモ（このセクションは編集なし — 結論固定）</div>
+      <textarea placeholder=""></textarea>
+    </div>
+  </div>
+
   <!-- Memo -->
   <div class="memo-card">
     <h3>ゼンからのメモ（クロキさん向け）</h3>
@@ -1191,7 +1245,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 function copyAll(btn) {
-  const order = ['sec-hook-lead', 'sec-1','sec-2','sec-3','sec-4','sec-5','sec-6'];
+  const order = ['sec-hook-lead', 'sec-1','sec-2','sec-3','sec-4','sec-5','sec-6','sec-7'];
   const headings = [
     '【一言で言うと】',
     '■ 1. 営業を半自動化した — 奈良の議員さんへの実例',
@@ -1199,7 +1253,8 @@ function copyAll(btn) {
     '■ 3. 動画編集も、ぜんぶAIがやる',
     '■ 4. メール・カレンダーの操作もAIに任せられる',
     '■ 5. なんでこんなことやってるか',
-    '■ 6. これ、他の業種にもそのまま応用できます（医師・士業・不動産）'
+    '■ 6. これ、他の業種にもそのまま応用できます（医師・士業・不動産）',
+    '■ 7. アイデア次第で、何でもできる'
   ];
   let out = '【クロキがAIで何をやっているか】\n\n';
   out += '※ なお、この資料そのものも、AIに指示を出して約10分で作成しています。\n\n';
