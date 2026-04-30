@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>クロキがAIで何をやっているか</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Serif+JP:wght@500;700;900&family=Inter:wght@500;700;800;900&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #f5f1ea;
+  --bg-soft: #faf7f1;
+  --ink: #1a1a1a;
+  --ink-soft: #4a4a4a;
+  --ink-dim: #888;
+  --line: #e6dfd2;
+  --navy: #1f3a5f;
+  --navy-deep: #14283f;
+  --gold: #c89b4a;
+  --gold-deep: #a07c2e;
+  --gold-light: #f5e8c8;
+  --paper: #ffffff;
+  --rose: #c45c5c;
+  --teal: #4a9b8e;
+  --shadow-sm: 0 1px 2px rgba(20, 40, 63, 0.04), 0 2px 8px rgba(20, 40, 63, 0.04);
+  --shadow-md: 0 2px 4px rgba(20, 40, 63, 0.06), 0 8px 24px rgba(20, 40, 63, 0.06);
+  --shadow-lg: 0 4px 8px rgba(20, 40, 63, 0.08), 0 16px 40px rgba(20, 40, 63, 0.10);
+}
+body {
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  background-image:
+    radial-gradient(ellipse at 10% 0%, rgba(31, 58, 95, 0.04) 0%, transparent 40%),
+    radial-gradient(ellipse at 90% 100%, rgba(200, 155, 74, 0.04) 0%, transparent 40%);
+  background-attachment: fixed;
+  color: var(--ink);
+  line-height: 1.85;
+  -webkit-font-smoothing: antialiased;
+}
+.container { max-width: 920px; margin: 0 auto; padding: 28px 18px 100px; }
+
+.toolbar {
+  position: sticky; top: 0;
+  background: rgba(245, 241, 234, 0.92);
+  backdrop-filter: blur(12px) saturate(140%);
+  padding: 12px 0; margin-bottom: 16px;
+  display: flex; gap: 10px; flex-wrap: wrap;
+  z-index: 30;
+  border-bottom: 1px solid rgba(31, 58, 95, 0.08);
+}
+.btn {
+  background: var(--navy); color: white; border: none;
+  padding: 10px 20px; border-radius: 100px;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; transition: all 0.2s;
+  font-family: inherit;
+}
+.btn:hover { background: var(--navy-deep); transform: translateY(-1px); }
+.btn.copied { background: #2d8659; }
+.btn.secondary { background: white; color: var(--navy); border: 1.5px solid var(--navy); }
+.btn.secondary:hover { background: var(--navy); color: white; }
+
+/* Hero */
+.hero {
+  background: linear-gradient(135deg, var(--navy-deep) 0%, var(--navy) 70%, #2a4a72 100%);
+  color: white; padding: 48px 48px 44px; border-radius: 20px;
+  margin-bottom: 22px; position: relative; overflow: hidden;
+  box-shadow: var(--shadow-lg);
+}
+.hero::before {
+  content: ''; position: absolute; top: -50%; right: -10%;
+  width: 60%; height: 200%;
+  background: radial-gradient(ellipse, rgba(200, 155, 74, 0.18) 0%, transparent 50%);
+}
+.hero::after {
+  content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--gold-deep) 100%);
+}
+.hero .eyebrow {
+  font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 2.4px; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 16px; position: relative;
+}
+.hero h1 {
+  font-family: 'Noto Serif JP', serif; font-size: 36px; font-weight: 900;
+  line-height: 1.45; margin-bottom: 14px; position: relative;
+}
+.hero h1 .accent { color: var(--gold); }
+.hero .subhead { font-size: 14.5px; opacity: 0.85; line-height: 1.8; position: relative; }
+.hero .meta-row {
+  margin-top: 22px; padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex; gap: 24px; flex-wrap: wrap;
+  position: relative; font-size: 12.5px; opacity: 0.75;
+}
+
+/* Meta Badge */
+.meta-badge {
+  background: linear-gradient(135deg, #fff7e6 0%, #fdf0d3 100%);
+  border: 1.5px solid var(--gold); border-radius: 16px;
+  padding: 18px 24px; margin-bottom: 22px;
+  display: flex; align-items: center; gap: 18px;
+  box-shadow: var(--shadow-sm); position: relative; overflow: hidden;
+}
+.meta-badge::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px; background: var(--gold);
+}
+.meta-badge .mb-icon {
+  flex-shrink: 0; width: 56px; height: 56px;
+  background: var(--gold); color: white; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 26px; font-weight: 900;
+}
+.meta-badge .mb-text { font-size: 14.5px; line-height: 1.7; color: #5a3e0e; }
+.meta-badge .mb-text strong { color: var(--gold-deep); font-weight: 800; }
+
+/* Hook */
+.hook-card {
+  background: var(--paper); padding: 36px 40px;
+  border-radius: 18px; margin-bottom: 18px;
+  box-shadow: var(--shadow-md); border-left: 5px solid var(--navy);
+}
+.hook-card .lead {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 21px; font-weight: 700; color: var(--ink);
+  margin-bottom: 24px; line-height: 1.7; text-align: center;
+}
+.hook-card .lead em {
+  background: linear-gradient(180deg, transparent 60%, rgba(200, 155, 74, 0.4) 60%);
+  padding: 0 4px; font-style: normal;
+}
+
+/* Card */
+.card {
+  background: var(--paper); border-radius: 18px;
+  box-shadow: var(--shadow-sm); margin-bottom: 18px;
+  overflow: hidden;
+}
+.card.featured { box-shadow: var(--shadow-md), 0 0 0 2px var(--gold); }
+.featured-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--gold); color: white;
+  font-family: 'Inter', sans-serif; font-size: 10.5px;
+  font-weight: 800; letter-spacing: 1.4px; text-transform: uppercase;
+  padding: 5px 12px; border-radius: 100px; margin-bottom: 14px;
+}
+.card-head { padding: 28px 40px 0; }
+.card-head .num-row {
+  display: flex; align-items: center; gap: 16px; margin-bottom: 4px;
+}
+.card-head .num {
+  flex-shrink: 0; width: 44px; height: 44px;
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy-deep) 100%);
+  color: white; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Inter', sans-serif; font-weight: 800; font-size: 16px;
+  box-shadow: 0 2px 8px rgba(31, 58, 95, 0.2);
+}
+.card.featured .card-head .num {
+  background: linear-gradient(135deg, var(--gold) 0%, var(--gold-deep) 100%);
+}
+.card-head h2 {
+  font-family: 'Noto Serif JP', serif; font-size: 23px;
+  font-weight: 800; color: var(--ink); line-height: 1.4;
+}
+
+/* Tabs */
+.tabs {
+  display: flex; gap: 4px; padding: 16px 40px 0;
+  border-bottom: 1px solid var(--line); margin-top: 14px;
+}
+.tab-btn {
+  background: transparent; border: none;
+  font-family: inherit; font-size: 13px; font-weight: 700;
+  color: var(--ink-dim); padding: 10px 16px 12px;
+  cursor: pointer; border-bottom: 3px solid transparent;
+  margin-bottom: -1px; transition: all 0.2s;
+}
+.tab-btn:hover { color: var(--navy); }
+.tab-btn.active { color: var(--navy); border-bottom-color: var(--gold); }
+.card.featured .tab-btn.active { color: var(--gold-deep); }
+.tab-panel { display: none; padding: 28px 40px 32px; }
+.tab-panel.active { display: block; animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* SVG figure */
+.figure {
+  background: linear-gradient(135deg, var(--bg-soft) 0%, #fff 100%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+}
+.figure svg { width: 100%; height: auto; max-width: 720px; display: block; }
+
+.fig-cap {
+  text-align: center; margin-top: 12px;
+  font-family: 'Noto Serif JP', serif;
+  font-size: 17px; font-weight: 700; color: var(--ink);
+  line-height: 1.55;
+}
+.fig-cap em {
+  background: linear-gradient(180deg, transparent 60%, rgba(200, 155, 74, 0.4) 60%);
+  padding: 0 4px; font-style: normal;
+}
+
+/* Detail */
+.detail-panel {
+  font-size: 14.5px; color: var(--ink-soft); line-height: 1.9;
+}
+.detail-panel[contenteditable="true"]:focus {
+  outline: 2px solid rgba(200, 155, 74, 0.5);
+  outline-offset: -2px; background: #fffdf8; border-radius: 4px;
+}
+.detail-panel p { margin-bottom: 14px; }
+.detail-panel ul { margin: 10px 0 16px 0; padding-left: 0; list-style: none; }
+.detail-panel ul li {
+  position: relative; padding-left: 22px; margin-bottom: 10px;
+}
+.detail-panel ul li::before {
+  content: ''; position: absolute; left: 4px; top: 12px;
+  width: 6px; height: 6px; background: var(--gold); border-radius: 50%;
+}
+.detail-panel strong { color: var(--ink); font-weight: 700; }
+.detail-panel em {
+  background: linear-gradient(180deg, transparent 60%, rgba(200, 155, 74, 0.3) 60%);
+  padding: 0 3px; font-style: normal; font-weight: 700; color: var(--ink);
+}
+.detail-panel h3 {
+  font-family: 'Noto Serif JP', serif; font-size: 16px;
+  font-weight: 700; color: var(--navy);
+  margin-top: 18px; margin-bottom: 8px;
+  padding-left: 12px; border-left: 3px solid var(--gold);
+}
+
+/* Intent */
+.intent {
+  margin: 0 40px 28px; padding: 14px 16px;
+  background: #fdf9ec; border: 1px solid #ecdfa8; border-radius: 10px;
+}
+.intent .intent-label {
+  font-family: 'Inter', sans-serif; font-size: 10.5px;
+  font-weight: 800; color: var(--gold-deep);
+  letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+}
+.intent textarea {
+  width: 100%; min-height: 52px;
+  border: 1px solid #e3d59a; border-radius: 8px;
+  padding: 10px 12px; font-family: inherit;
+  font-size: 13.5px; background: white; resize: vertical;
+}
+
+/* Memo */
+.memo-card {
+  background: linear-gradient(135deg, #f0f4fa 0%, #e8eef8 100%);
+  border: 1px solid #c8d6ec; border-radius: 16px;
+  padding: 28px 36px; margin-top: 18px;
+}
+.memo-card h3 {
+  font-family: 'Noto Serif JP', serif; font-size: 16px;
+  font-weight: 700; color: var(--navy-deep);
+  margin-bottom: 14px; padding-left: 12px;
+  border-left: 3px solid var(--gold);
+}
+.memo-card ul { padding-left: 0; list-style: none; }
+.memo-card li {
+  font-size: 13.5px; color: #2a4660; line-height: 1.75;
+  margin-bottom: 10px; padding-left: 18px; position: relative;
+}
+.memo-card li::before {
+  content: '▸'; position: absolute; left: 0;
+  color: var(--gold); font-weight: 700;
+}
+
+@media print {
+  .toolbar, .intent, .memo-card, .tabs { display: none; }
+  body { background: white; }
+  .tab-panel { display: block !important; padding: 16px 24px; }
+}
+@media (max-width: 640px) {
+  .hero { padding: 36px 28px 32px; }
+  .hero h1 { font-size: 26px; }
+  .card-head, .tabs, .tab-panel { padding-left: 24px; padding-right: 24px; }
+  .intent { margin-left: 24px; margin-right: 24px; }
+  .hook-card { padding: 28px 24px; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="toolbar">
+    <button class="btn" onclick="copyAll(this)">本文を全部コピー（先方送信用）</button>
+    <button class="btn secondary" onclick="copyIntents(this)">修正意図だけコピー</button>
+    <button class="btn secondary" onclick="window.print()">印刷 / PDF保存</button>
+  </div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="eyebrow">For Forwarding ・ 不動産会社 → 医師向けセミナー登壇 想定</div>
+    <h1>クロキが <span class="accent">AI</span> で<br>何をやっているか</h1>
+    <div class="subhead">図解で一望できる版です。詳しい説明は各カードの「📝 詳しく」タブから。</div>
+    <div class="meta-row">
+      <span>2026-04-30 ・ 株式会社ElevaNeige クロキ</span>
+    </div>
+  </div>
+
+  <!-- Meta Badge -->
+  <div class="meta-badge">
+    <div class="mb-icon">⏱</div>
+    <div class="mb-text">
+      <strong>※ ご参考まで：この資料そのものも、AIに指示を出して<u>約10分</u>で作成しています。</strong><br>
+      「AIが手足になる」というのが、こういう感覚です。
+    </div>
+  </div>
+
+  <!-- HOOK : Image + SVG -->
+  <div class="hook-card">
+    <div class="lead" contenteditable="true" id="sec-hook-lead"><em>1人の社長</em>が、<em>AIを手足</em>にして<br><em>10人分の業務</em>を回している</div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab(this, 'image-hero')">🎨 ビジュアル</button>
+      <button class="tab-btn" onclick="showTab(this, 'viz-hero')">📊 図解</button>
+    </div>
+    <div class="tab-panel active" id="image-hero">
+      <div class="figure"><img src="_assets/ai_business_explanation/01_hero.png" alt="1人 + AIで10人分" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
+    </div>
+    <div class="tab-panel" id="viz-hero">
+    <div class="figure">
+      <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg">
+        <!-- Left: 10 employees with X -->
+        <g transform="translate(40, 60)">
+          <text x="80" y="-22" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#888" letter-spacing="1.4">普通の会社</text>
+          <g fill="#c45c5c" opacity="0.5">
+            <circle cx="20" cy="20" r="11"/><rect x="9" y="32" width="22" height="28" rx="3"/>
+            <circle cx="60" cy="20" r="11"/><rect x="49" y="32" width="22" height="28" rx="3"/>
+            <circle cx="100" cy="20" r="11"/><rect x="89" y="32" width="22" height="28" rx="3"/>
+            <circle cx="140" cy="20" r="11"/><rect x="129" y="32" width="22" height="28" rx="3"/>
+            <circle cx="180" cy="20" r="11"/><rect x="169" y="32" width="22" height="28" rx="3"/>
+            <circle cx="20" cy="90" r="11"/><rect x="9" y="102" width="22" height="28" rx="3"/>
+            <circle cx="60" cy="90" r="11"/><rect x="49" y="102" width="22" height="28" rx="3"/>
+            <circle cx="100" cy="90" r="11"/><rect x="89" y="102" width="22" height="28" rx="3"/>
+            <circle cx="140" cy="90" r="11"/><rect x="129" y="102" width="22" height="28" rx="3"/>
+            <circle cx="180" cy="90" r="11"/><rect x="169" y="102" width="22" height="28" rx="3"/>
+          </g>
+          <text x="100" y="160" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="700" fill="#c45c5c">10人分の人件費</text>
+          <text x="100" y="178" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#888">→ 諦める</text>
+        </g>
+
+        <!-- Arrow -->
+        <g transform="translate(290, 130)">
+          <path d="M 0 0 L 60 0 M 50 -8 L 60 0 L 50 8" stroke="#c89b4a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </g>
+
+        <!-- Right: 1 person + AI -->
+        <g transform="translate(420, 50)">
+          <text x="120" y="-12" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#a07c2e" letter-spacing="1.4">うちの場合</text>
+          <!-- 1 person -->
+          <g fill="#1f3a5f">
+            <circle cx="40" cy="40" r="16"/>
+            <rect x="22" y="58" width="36" height="44" rx="4"/>
+          </g>
+          <text x="40" y="120" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">クロキ</text>
+
+          <!-- Lines from person to AI bots -->
+          <g stroke="#c89b4a" stroke-width="1.5" fill="none" opacity="0.55">
+            <path d="M 60 50 Q 95 30 140 30"/>
+            <path d="M 60 60 Q 95 60 140 60"/>
+            <path d="M 60 70 Q 95 90 140 90"/>
+            <path d="M 60 50 Q 100 25 180 25"/>
+            <path d="M 60 75 Q 100 100 180 105"/>
+            <path d="M 60 60 Q 110 60 220 60"/>
+          </g>
+
+          <!-- AI bots -->
+          <g>
+            <g transform="translate(140, 18)">
+              <rect x="0" y="0" width="22" height="22" rx="5" fill="#c89b4a"/>
+              <circle cx="7" cy="9" r="2" fill="white"/><circle cx="15" cy="9" r="2" fill="white"/>
+              <rect x="6" y="14" width="10" height="2" rx="1" fill="white"/>
+            </g>
+            <g transform="translate(140, 50)">
+              <rect x="0" y="0" width="22" height="22" rx="5" fill="#c89b4a"/>
+              <circle cx="7" cy="9" r="2" fill="white"/><circle cx="15" cy="9" r="2" fill="white"/>
+              <rect x="6" y="14" width="10" height="2" rx="1" fill="white"/>
+            </g>
+            <g transform="translate(140, 82)">
+              <rect x="0" y="0" width="22" height="22" rx="5" fill="#c89b4a"/>
+              <circle cx="7" cy="9" r="2" fill="white"/><circle cx="15" cy="9" r="2" fill="white"/>
+              <rect x="6" y="14" width="10" height="2" rx="1" fill="white"/>
+            </g>
+            <g transform="translate(180, 14)">
+              <rect x="0" y="0" width="22" height="22" rx="5" fill="#c89b4a"/>
+              <circle cx="7" cy="9" r="2" fill="white"/><circle cx="15" cy="9" r="2" fill="white"/>
+              <rect x="6" y="14" width="10" height="2" rx="1" fill="white"/>
+            </g>
+            <g transform="translate(180, 94)">
+              <rect x="0" y="0" width="22" height="22" rx="5" fill="#c89b4a"/>
+              <circle cx="7" cy="9" r="2" fill="white"/><circle cx="15" cy="9" r="2" fill="white"/>
+              <rect x="6" y="14" width="10" height="2" rx="1" fill="white"/>
+            </g>
+            <g transform="translate(220, 50)">
+              <rect x="0" y="0" width="22" height="22" rx="5" fill="#c89b4a"/>
+              <circle cx="7" cy="9" r="2" fill="white"/><circle cx="15" cy="9" r="2" fill="white"/>
+              <rect x="6" y="14" width="10" height="2" rx="1" fill="white"/>
+            </g>
+          </g>
+          <text x="180" y="150" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" font-weight="700" fill="#1f3a5f">AIに業務を分担</text>
+          <text x="180" y="168" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="600" fill="#888">→ 1人で同じ生産量</text>
+        </g>
+      </svg>
+    </div>
+    </div>
+  </div>
+
+  <!-- Card 1: 奈良議員 -->
+  <div class="card featured">
+    <div class="card-head">
+      <span class="featured-tag">★ 進行中の実例</span>
+      <div class="num-row"><div class="num">1</div><h2>営業を半自動化した — 奈良の議員さんへの実例</h2></div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab(this, 'image-1')">🎨 ビジュアル</button>
+      <button class="tab-btn" onclick="showTab(this, 'viz-1')">📊 図解</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-1')">📝 詳しく</button>
+    </div>
+    <div class="tab-panel active" id="image-1">
+      <div class="figure"><img src="_assets/ai_business_explanation/02_nara.png" alt="奈良議員アウトリーチ" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
+    </div>
+    <div class="tab-panel" id="viz-1">
+      <div class="figure">
+        <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg">
+          <!-- 100 dots representing 100 council members -->
+          <g transform="translate(40, 30)">
+            <text x="100" y="-10" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#1f3a5f" letter-spacing="1.4">奈良の議員さん 約100名</text>
+            <g fill="#1f3a5f" opacity="0.7">
+              <!-- 10x10 grid -->
+              <g id="dot-grid"></g>
+            </g>
+            <script type="text/template">
+              <!-- Generated below -->
+            </script>
+            <!-- Manual 10x10 grid of person dots -->
+            <g fill="#1f3a5f">
+              <!-- Row 0..9 -->
+              <!-- Each person: small circle head + body -->
+            </g>
+          </g>
+
+          <!-- Center AI -->
+          <g transform="translate(310, 130)">
+            <rect x="0" y="0" width="100" height="100" rx="16" fill="url(#aiGrad)" stroke="#a07c2e" stroke-width="2"/>
+            <circle cx="35" cy="42" r="6" fill="white"/>
+            <circle cx="65" cy="42" r="6" fill="white"/>
+            <rect x="32" y="62" width="36" height="6" rx="3" fill="white"/>
+            <rect x="38" y="74" width="24" height="4" rx="2" fill="white" opacity="0.7"/>
+            <text x="50" y="120" text-anchor="middle" font-family="Inter, sans-serif" font-size="12" font-weight="800" fill="#a07c2e" letter-spacing="1.4">AI</text>
+            <text x="50" y="136" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">1人ずつリサーチ</text>
+            <text x="50" y="150" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">1人ずつ書き分け</text>
+          </g>
+
+          <!-- Right: tailored emails -->
+          <g transform="translate(490, 50)">
+            <text x="100" y="-10" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#a07c2e" letter-spacing="1.4">パーソナライズ提案</text>
+            <!-- 6 letters/envelopes with different colors -->
+            <g>
+              <g transform="translate(0, 0)">
+                <rect x="0" y="0" width="50" height="36" rx="3" fill="white" stroke="#c89b4a" stroke-width="1.5"/>
+                <path d="M 0 0 L 25 22 L 50 0" fill="none" stroke="#c89b4a" stroke-width="1.5"/>
+                <rect x="6" y="22" width="38" height="2" fill="#c89b4a" opacity="0.4"/>
+                <rect x="6" y="27" width="28" height="2" fill="#c89b4a" opacity="0.4"/>
+              </g>
+              <g transform="translate(60, 14)">
+                <rect x="0" y="0" width="50" height="36" rx="3" fill="white" stroke="#1f3a5f" stroke-width="1.5"/>
+                <path d="M 0 0 L 25 22 L 50 0" fill="none" stroke="#1f3a5f" stroke-width="1.5"/>
+                <rect x="6" y="22" width="38" height="2" fill="#1f3a5f" opacity="0.4"/>
+                <rect x="6" y="27" width="22" height="2" fill="#1f3a5f" opacity="0.4"/>
+              </g>
+              <g transform="translate(120, 4)">
+                <rect x="0" y="0" width="50" height="36" rx="3" fill="white" stroke="#4a9b8e" stroke-width="1.5"/>
+                <path d="M 0 0 L 25 22 L 50 0" fill="none" stroke="#4a9b8e" stroke-width="1.5"/>
+                <rect x="6" y="22" width="38" height="2" fill="#4a9b8e" opacity="0.4"/>
+                <rect x="6" y="27" width="32" height="2" fill="#4a9b8e" opacity="0.4"/>
+              </g>
+              <g transform="translate(20, 70)">
+                <rect x="0" y="0" width="50" height="36" rx="3" fill="white" stroke="#c45c5c" stroke-width="1.5"/>
+                <path d="M 0 0 L 25 22 L 50 0" fill="none" stroke="#c45c5c" stroke-width="1.5"/>
+                <rect x="6" y="22" width="38" height="2" fill="#c45c5c" opacity="0.4"/>
+                <rect x="6" y="27" width="20" height="2" fill="#c45c5c" opacity="0.4"/>
+              </g>
+              <g transform="translate(85, 80)">
+                <rect x="0" y="0" width="50" height="36" rx="3" fill="white" stroke="#a07c2e" stroke-width="1.5"/>
+                <path d="M 0 0 L 25 22 L 50 0" fill="none" stroke="#a07c2e" stroke-width="1.5"/>
+                <rect x="6" y="22" width="38" height="2" fill="#a07c2e" opacity="0.4"/>
+                <rect x="6" y="27" width="32" height="2" fill="#a07c2e" opacity="0.4"/>
+              </g>
+              <g transform="translate(150, 70)">
+                <rect x="0" y="0" width="50" height="36" rx="3" fill="white" stroke="#1f3a5f" stroke-width="1.5"/>
+                <path d="M 0 0 L 25 22 L 50 0" fill="none" stroke="#1f3a5f" stroke-width="1.5"/>
+                <rect x="6" y="22" width="38" height="2" fill="#1f3a5f" opacity="0.4"/>
+                <rect x="6" y="27" width="26" height="2" fill="#1f3a5f" opacity="0.4"/>
+              </g>
+            </g>
+            <text x="100" y="140" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">1人ずつ違う文面</text>
+          </g>
+
+          <!-- Connecting lines -->
+          <g stroke="#c89b4a" stroke-width="1.2" fill="none" opacity="0.5">
+            <path d="M 240 130 L 310 170"/>
+            <path d="M 240 160 L 310 180"/>
+            <path d="M 240 190 L 310 200"/>
+            <path d="M 410 170 L 490 90"/>
+            <path d="M 410 180 L 490 130"/>
+            <path d="M 410 200 L 490 170"/>
+          </g>
+
+          <!-- Bottom: time comparison -->
+          <g transform="translate(0, 290)">
+            <rect x="100" y="0" width="220" height="56" rx="10" fill="#f4f1eb" stroke="#e0d9ca"/>
+            <text x="210" y="20" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="800" fill="#888" letter-spacing="1.4">普通やったら</text>
+            <text x="210" y="44" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="22" font-weight="900" fill="#888">丸 3 日</text>
+
+            <g transform="translate(360, 10)">
+              <path d="M 0 18 L 30 18 M 22 12 L 30 18 L 22 24" stroke="#c89b4a" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+            </g>
+
+            <rect x="400" y="0" width="220" height="56" rx="10" fill="#fffaf0" stroke="#c89b4a" stroke-width="1.5"/>
+            <text x="510" y="20" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="800" fill="#a07c2e" letter-spacing="1.4">うちの場合</text>
+            <text x="510" y="44" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="22" font-weight="900" fill="#1f3a5f">半 日</text>
+          </g>
+
+          <defs>
+            <linearGradient id="aiGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#c89b4a"/>
+              <stop offset="100%" stop-color="#a07c2e"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Generate 100 people grid via inline shapes -->
+          <g transform="translate(40, 60)" fill="#1f3a5f">
+            <!-- 10 cols × 10 rows -->
+            <g id="people"></g>
+          </g>
+        </svg>
+      </div>
+      <p class="fig-cap">議員さん100人に対して、<em>AIが1人ずつ違う調査と提案文を作成</em>。<br>結果、<em>丸3日 → 半日</em> に圧縮しても1通ずつパーソナライズが保たれる。</p>
+    </div>
+    <div class="tab-panel" id="det-1">
+      <div class="detail-panel" contenteditable="true" id="sec-1">
+        <p><strong>今まさに動いているのが、奈良県議会・奈良市議会の議員さんへの営業</strong>です。来年（2027年4月）の統一地方選に向けて、SNS運営サポートを提案しています。</p>
+        <p>議員さん全員に同じテンプレで営業メール送ったら、誰の心にも響かないですよね。逆に1人ずつ調べて文章書いたら、1人30分〜1時間かかって、100人なら丸3日仕事です。<strong>うちはAIにこれを丸ごとやらせています。</strong></p>
+        <p>具体的にAIがやってること：</p>
+        <ul>
+          <li>議員さんの公式サイト・SNS・過去の発言を自動でリサーチ</li>
+          <li>「この議員はこの政策を推してる」「この人は子育て支援が軸」みたいな関心テーマを抽出</li>
+          <li>その関心に沿った形で、SNS運営サポートの提案文を <em>1人ずつ書き分ける</em></li>
+          <li>メールアドレスがない議員さんは、SNS DM・問い合わせフォームへ自動で振り分け</li>
+          <li>送信したあと、返信が来たら即通知</li>
+        </ul>
+        <p><strong>「数で押す営業」と「個別最適の営業」を両立させてる</strong>のが特徴です。これは奈良だけじゃなく、業種ごと・エリアごとに展開できます。</p>
+      </div>
+    </div>
+    <div class="intent">
+      <div class="intent-label">修正意図メモ</div>
+      <textarea placeholder="例: 議員数を伏せた / 統一地方選には触れないことにした 等"></textarea>
+    </div>
+  </div>
+
+  <!-- Card 2: SNS全展開 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="num-row"><div class="num">2</div><h2>SNSを全部、1人で埋める仕組み</h2></div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab(this, 'image-2')">🎨 ビジュアル</button>
+      <button class="tab-btn" onclick="showTab(this, 'viz-2')">📊 図解</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-2')">📝 詳しく</button>
+    </div>
+    <div class="tab-panel active" id="image-2">
+      <div class="figure"><img src="_assets/ai_business_explanation/03_sns.png" alt="SNSを全部1人で埋める仕組み" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
+    </div>
+    <div class="tab-panel" id="viz-2">
+      <div class="figure">
+        <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg">
+          <!-- Center: microphone (1 podcast) -->
+          <g transform="translate(360, 180)">
+            <circle cx="0" cy="0" r="46" fill="#1f3a5f"/>
+            <circle cx="0" cy="0" r="46" fill="none" stroke="#c89b4a" stroke-width="3"/>
+            <!-- mic icon -->
+            <rect x="-9" y="-22" width="18" height="26" rx="9" fill="white"/>
+            <path d="M -16 4 Q -16 16 0 16 Q 16 16 16 4" fill="none" stroke="white" stroke-width="2.5"/>
+            <line x1="0" y1="16" x2="0" y2="24" stroke="white" stroke-width="2.5"/>
+            <text x="0" y="68" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="14" font-weight="800" fill="#1f3a5f">ポッドキャスト</text>
+            <text x="0" y="84" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="14" font-weight="800" fill="#c89b4a">1本だけ収録</text>
+          </g>
+
+          <!-- 9 SNS platforms around -->
+          <!-- Radial layout: 9 nodes at 360/9=40 degree intervals -->
+          <g font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#1f3a5f">
+            <!-- X / Twitter (top) -->
+            <g transform="translate(360, 50)">
+              <circle r="28" fill="white" stroke="#1f3a5f" stroke-width="2"/>
+              <text y="6" text-anchor="middle" font-size="22" font-weight="900" fill="#1f3a5f">𝕏</text>
+              <text y="50" text-anchor="middle" fill="#1f3a5f">X</text>
+            </g>
+            <!-- Threads (top-right) -->
+            <g transform="translate(540, 100)">
+              <circle r="28" fill="white" stroke="#1f3a5f" stroke-width="2"/>
+              <text y="6" text-anchor="middle" font-size="22" font-weight="900" fill="#1f3a5f">@</text>
+              <text y="50" text-anchor="middle" fill="#1f3a5f">Threads</text>
+            </g>
+            <!-- LinkedIn (right) -->
+            <g transform="translate(620, 220)">
+              <circle r="28" fill="white" stroke="#1f3a5f" stroke-width="2"/>
+              <text y="6" text-anchor="middle" font-size="20" font-weight="900" fill="#1f3a5f">in</text>
+              <text y="50" text-anchor="middle" fill="#1f3a5f">LinkedIn</text>
+            </g>
+            <!-- TikTok (bottom-right) -->
+            <g transform="translate(540, 320)">
+              <circle r="28" fill="white" stroke="#1f3a5f" stroke-width="2"/>
+              <text y="6" text-anchor="middle" font-size="22" font-weight="900" fill="#1f3a5f">♪</text>
+              <text y="-38" text-anchor="middle" fill="#1f3a5f">TikTok</text>
+            </g>
+            <!-- Instagram Reels (bottom) -->
+            <g transform="translate(360, 320)">
+              <circle r="28" fill="white" stroke="#1f3a5f" stroke-width="2"/>
+              <rect x="-10" y="-10" width="20" height="20" rx="5" fill="none" stroke="#1f3a5f" stroke-width="2"/>
+              <circle cx="0" cy="0" r="5" fill="none" stroke="#1f3a5f" stroke-width="2"/>
+              <text y="-38" text-anchor="middle" fill="#1f3a5f">IG Reels</text>
+            </g>
+            <!-- YouTube Shorts (bottom-left) -->
+            <g transform="translate(180, 320)">
+              <circle r="28" fill="white" stroke="#1f3a5f" stroke-width="2"/>
+              <polygon points="-7,-9 -7,9 9,0" fill="#1f3a5f"/>
+              <text y="-38" text-anchor="middle" fill="#1f3a5f">YT Shorts</text>
+            </g>
+            <!-- note (left) -->
+            <g transform="translate(100, 220)">
+              <circle r="28" fill="white" stroke="#1f3a5f" stroke-width="2"/>
+              <text y="6" text-anchor="middle" font-size="14" font-weight="900" fill="#1f3a5f">note</text>
+              <text y="50" text-anchor="middle" fill="#1f3a5f">note</text>
+            </g>
+            <!-- Facebook (top-left) -->
+            <g transform="translate(180, 100)">
+              <circle r="28" fill="white" stroke="#1f3a5f" stroke-width="2"/>
+              <text y="6" text-anchor="middle" font-size="22" font-weight="900" fill="#1f3a5f">f</text>
+              <text y="50" text-anchor="middle" fill="#1f3a5f">Facebook</text>
+            </g>
+            <!-- Podcast (left-middle, slightly offset) -->
+            <g transform="translate(50, 130)">
+              <circle r="28" fill="white" stroke="#1f3a5f" stroke-width="2"/>
+              <circle cx="0" cy="-4" r="6" fill="#1f3a5f"/>
+              <path d="M -8 4 Q -8 12 0 12 Q 8 12 8 4" fill="none" stroke="#1f3a5f" stroke-width="2"/>
+              <text y="50" text-anchor="middle" fill="#1f3a5f">Podcast</text>
+            </g>
+          </g>
+
+          <!-- Lines from center to each platform -->
+          <g stroke="#c89b4a" stroke-width="1.6" fill="none" opacity="0.5">
+            <path d="M 360 134 L 360 78"/>
+            <path d="M 392 152 L 512 122"/>
+            <path d="M 405 195 L 593 218"/>
+            <path d="M 393 215 L 514 300"/>
+            <path d="M 360 226 L 360 295"/>
+            <path d="M 327 215 L 207 297"/>
+            <path d="M 315 195 L 127 220"/>
+            <path d="M 327 152 L 207 122"/>
+            <path d="M 314 175 L 78 138"/>
+          </g>
+        </svg>
+      </div>
+      <p class="fig-cap"><em>1本のポッドキャスト</em> から、<em>9媒体すべて</em>に最適化された投稿を自動生成。</p>
+    </div>
+    <div class="tab-panel" id="det-2">
+      <div class="detail-panel" contenteditable="true" id="sec-2">
+        <p>ビデオポッドキャストを<strong>1本だけ収録</strong>します。それだけで、AIが勝手に9媒体すべてへ投稿してくれます。</p>
+        <p>1本のしゃべりから、<em>媒体ごとに最適な長さ・トーンに書き分けて、合計数十本の投稿を自動生成</em>します。文章だけじゃなくて、ショート動画も切り出してくれます。</p>
+        <p>媒体ごとの違い（例）：X はキャッチー短文、note は SEO 対応の長文、LinkedIn はビジネス文体、Threads はラフな共感トーン、ショート系は縦型動画 — 全部AIが媒体特性を理解して書き分けます。</p>
+      </div>
+    </div>
+    <div class="intent">
+      <div class="intent-label">修正意図メモ</div>
+      <textarea placeholder=""></textarea>
+    </div>
+  </div>
+
+  <!-- Card 3: 動画編集 -->
+  <div class="card">
+    <div class="card-head">
+      <div class="num-row"><div class="num">3</div><h2>動画編集も、ぜんぶAIがやる</h2></div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab(this, 'image-3')">🎨 ビジュアル</button>
+      <button class="tab-btn" onclick="showTab(this, 'viz-3')">📊 図解</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-3')">📝 詳しく</button>
+    </div>
+    <div class="tab-panel active" id="image-3">
+      <div class="figure"><img src="_assets/ai_business_explanation/04_video.png" alt="動画編集パイプライン" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
+    </div>
+    <div class="tab-panel" id="viz-3">
+      <div class="figure">
+        <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg">
+          <!-- Top row: raw video timeline (messy) -->
+          <g transform="translate(60, 20)">
+            <text x="0" y="0" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#888" letter-spacing="1.4">撮影直後の素材（カオス）</text>
+            <rect x="0" y="14" width="600" height="34" rx="4" fill="#f4f1eb" stroke="#ccc"/>
+            <!-- silence gaps in red -->
+            <rect x="40" y="18" width="30" height="26" rx="2" fill="#c45c5c" opacity="0.35"/>
+            <rect x="120" y="18" width="20" height="26" rx="2" fill="#c45c5c" opacity="0.35"/>
+            <rect x="220" y="18" width="40" height="26" rx="2" fill="#c45c5c" opacity="0.35"/>
+            <rect x="340" y="18" width="25" height="26" rx="2" fill="#c45c5c" opacity="0.35"/>
+            <rect x="430" y="18" width="35" height="26" rx="2" fill="#c45c5c" opacity="0.35"/>
+            <rect x="540" y="18" width="30" height="26" rx="2" fill="#c45c5c" opacity="0.35"/>
+            <text x="0" y="68" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#c45c5c" font-weight="700">↑ えーと / あのー / 言い淀み（赤）</text>
+          </g>
+
+          <!-- Down arrow with AI processing -->
+          <g transform="translate(360, 105)">
+            <rect x="-50" y="-12" width="100" height="36" rx="18" fill="#c89b4a"/>
+            <text x="0" y="11" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="900" fill="white">AI 編集</text>
+            <path d="M 0 28 L 0 50 M -7 43 L 0 50 L 7 43" stroke="#c89b4a" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+
+          <!-- Processing functions -->
+          <g transform="translate(60, 170)" font-family="Inter, sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">
+            <g transform="translate(0, 0)">
+              <rect x="0" y="0" width="92" height="46" rx="8" fill="white" stroke="#c89b4a"/>
+              <text x="46" y="20" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">無音カット</text>
+              <text x="46" y="36" text-anchor="middle" font-size="9" fill="#888">silence cut</text>
+            </g>
+            <g transform="translate(102, 0)">
+              <rect x="0" y="0" width="92" height="46" rx="8" fill="white" stroke="#c89b4a"/>
+              <text x="46" y="20" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">テロップ</text>
+              <text x="46" y="36" text-anchor="middle" font-size="9" fill="#888">caption</text>
+            </g>
+            <g transform="translate(204, 0)">
+              <rect x="0" y="0" width="92" height="46" rx="8" fill="white" stroke="#c89b4a"/>
+              <text x="46" y="20" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">章立て</text>
+              <text x="46" y="36" text-anchor="middle" font-size="9" fill="#888">topic card</text>
+            </g>
+            <g transform="translate(306, 0)">
+              <rect x="0" y="0" width="92" height="46" rx="8" fill="white" stroke="#c89b4a"/>
+              <text x="46" y="20" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">BGM自動</text>
+              <text x="46" y="36" text-anchor="middle" font-size="9" fill="#888">music</text>
+            </g>
+            <g transform="translate(408, 0)">
+              <rect x="0" y="0" width="92" height="46" rx="8" fill="white" stroke="#c89b4a"/>
+              <text x="46" y="20" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">ショート切出</text>
+              <text x="46" y="36" text-anchor="middle" font-size="9" fill="#888">short × 5-7</text>
+            </g>
+            <g transform="translate(510, 0)">
+              <rect x="0" y="0" width="92" height="46" rx="8" fill="white" stroke="#c89b4a"/>
+              <text x="46" y="20" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">声の複製</text>
+              <text x="46" y="36" text-anchor="middle" font-size="9" fill="#888">voice clone</text>
+            </g>
+          </g>
+
+          <!-- Final video -->
+          <g transform="translate(60, 245)">
+            <text x="0" y="0" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#a07c2e" letter-spacing="1.4">完成動画（数時間で完成）</text>
+            <rect x="0" y="14" width="500" height="34" rx="4" fill="#fff" stroke="#c89b4a" stroke-width="1.5"/>
+            <rect x="6" y="20" width="488" height="22" rx="2" fill="#1f3a5f" opacity="0.85"/>
+            <text x="250" y="36" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="white">テロップ + 章立て + BGM</text>
+            <!-- shorts on the right -->
+            <g transform="translate(518, 12)">
+              <rect x="0" y="0" width="22" height="38" rx="3" fill="#1f3a5f"/>
+              <rect x="26" y="0" width="22" height="38" rx="3" fill="#1f3a5f" opacity="0.75"/>
+              <rect x="52" y="0" width="22" height="38" rx="3" fill="#1f3a5f" opacity="0.55"/>
+              <text x="36" y="58" text-anchor="middle" font-family="Inter, sans-serif" font-size="9" font-weight="700" fill="#888">縦型 5-7本</text>
+            </g>
+          </g>
+        </svg>
+      </div>
+      <p class="fig-cap">撮影終了後、AIが <em>無音カット → テロップ → 章立て → BGM → ショート切出し</em> を自動実行。<br><em>数日 → 数時間</em> に圧縮。</p>
+    </div>
+    <div class="tab-panel" id="det-3">
+      <div class="detail-panel" contenteditable="true" id="sec-3">
+        <p>ポッドキャストや解説動画を撮影したあと、AIが勝手に以下を全部やってくれます。</p>
+        <ul>
+          <li><strong>無音カット</strong> — 「えーと」「あのー」みたいな間や言い淀みを自動で削る</li>
+          <li><strong>テロップ自動生成</strong> — しゃべりを文字起こしして、誤認識を文脈から正しい日本語に直してくれる</li>
+          <li><strong>章立てカード挿入</strong> — 話題が変わるところで「ここから〇〇の話」みたいな章立てを自動挿入</li>
+          <li><strong>BGM自動切替</strong> — 場面ごとにBGMを変えてミックス</li>
+          <li><strong>ショート動画切り出し</strong> — 長尺から「バズりそうな部分」を5〜7本ピックアップして、縦型に再編集</li>
+        </ul>
+        <p>さらに <strong>自分の声をAIにコピー</strong> させてあるので、後から原稿を書いて差し替えても、自分が喋ってるようにナレーションをつけられます。</p>
+      </div>
+    </div>
+    <div class="intent">
+      <div class="intent-label">修正意図メモ</div>
+      <textarea placeholder=""></textarea>
+    </div>
+  </div>
+
+  <!-- Card 4: Gmail/カレンダー -->
+  <div class="card">
+    <div class="card-head">
+      <div class="num-row"><div class="num">4</div><h2>メール・カレンダーの操作も、AIに任せられる</h2></div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab(this, 'image-4')">🎨 ビジュアル</button>
+      <button class="tab-btn" onclick="showTab(this, 'viz-4')">📊 図解</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-4')">📝 詳しく</button>
+    </div>
+    <div class="tab-panel active" id="image-4">
+      <div class="figure"><img src="_assets/ai_business_explanation/05_gmail.png" alt="Gmail/カレンダー連携" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
+    </div>
+    <div class="tab-panel" id="viz-4">
+      <div class="figure">
+        <svg viewBox="0 0 720 280" xmlns="http://www.w3.org/2000/svg">
+          <!-- User chat bubble -->
+          <g transform="translate(40, 60)">
+            <rect x="0" y="0" width="220" height="80" rx="14" fill="#1f3a5f"/>
+            <text x="20" y="28" font-family="'Noto Sans JP', sans-serif" font-size="13" font-weight="700" fill="white">クロキ：</text>
+            <text x="20" y="52" font-family="'Noto Sans JP', sans-serif" font-size="12" fill="white" opacity="0.9">「来週の水曜14時で</text>
+            <text x="20" y="68" font-family="'Noto Sans JP', sans-serif" font-size="12" fill="white" opacity="0.9">  〇〇さんと打合せ調整して」</text>
+            <!-- bubble tail -->
+            <path d="M 220 60 L 232 70 L 220 76 Z" fill="#1f3a5f"/>
+          </g>
+
+          <!-- Arrow -->
+          <g transform="translate(280, 100)">
+            <path d="M 0 0 L 60 0 M 50 -8 L 60 0 L 50 8" stroke="#c89b4a" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            <text x="30" y="-12" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#c89b4a">AI</text>
+          </g>
+
+          <!-- Right side: 3 actions in parallel -->
+          <g transform="translate(360, 30)">
+            <!-- Gmail -->
+            <g>
+              <rect x="0" y="0" width="280" height="50" rx="10" fill="white" stroke="#c89b4a" stroke-width="1.5"/>
+              <g transform="translate(16, 14)">
+                <rect x="0" y="0" width="22" height="22" rx="2" fill="white" stroke="#c45c5c" stroke-width="2"/>
+                <path d="M 0 0 L 11 9 L 22 0" fill="none" stroke="#c45c5c" stroke-width="2"/>
+              </g>
+              <text x="50" y="22" font-family="'Noto Sans JP', sans-serif" font-size="13" font-weight="700" fill="#1f3a5f">Gmail で先方とやり取り</text>
+              <text x="50" y="40" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#888">候補日返信→確定→お礼まで</text>
+            </g>
+
+            <!-- Calendar -->
+            <g transform="translate(0, 70)">
+              <rect x="0" y="0" width="280" height="50" rx="10" fill="white" stroke="#c89b4a" stroke-width="1.5"/>
+              <g transform="translate(16, 14)">
+                <rect x="0" y="2" width="22" height="20" rx="2" fill="white" stroke="#1f3a5f" stroke-width="2"/>
+                <line x1="0" y1="8" x2="22" y2="8" stroke="#1f3a5f" stroke-width="2"/>
+                <line x1="6" y1="0" x2="6" y2="6" stroke="#1f3a5f" stroke-width="2"/>
+                <line x1="16" y1="0" x2="16" y2="6" stroke="#1f3a5f" stroke-width="2"/>
+              </g>
+              <text x="50" y="22" font-family="'Noto Sans JP', sans-serif" font-size="13" font-weight="700" fill="#1f3a5f">Googleカレンダー登録</text>
+              <text x="50" y="40" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#888">本人 + 先方 + リマインド</text>
+            </g>
+
+            <!-- Reminder -->
+            <g transform="translate(0, 140)">
+              <rect x="0" y="0" width="280" height="50" rx="10" fill="white" stroke="#c89b4a" stroke-width="1.5"/>
+              <g transform="translate(16, 14)">
+                <path d="M 11 0 C 4 0 4 8 4 14 L 0 18 L 22 18 L 18 14 C 18 8 18 0 11 0 Z" fill="white" stroke="#a07c2e" stroke-width="2"/>
+                <circle cx="11" cy="22" r="3" fill="#a07c2e"/>
+              </g>
+              <text x="50" y="22" font-family="'Noto Sans JP', sans-serif" font-size="13" font-weight="700" fill="#1f3a5f">朝のまとめ自動配信</text>
+              <text x="50" y="40" font-family="'Noto Sans JP', sans-serif" font-size="11" fill="#888">今日のTODO + 営業返信状況</text>
+            </g>
+          </g>
+
+          <!-- Bottom comparison -->
+          <g transform="translate(40, 230)">
+            <text x="0" y="0" font-family="'Noto Serif JP', serif" font-size="14" font-weight="700" fill="#1f3a5f">普通：秘書1人雇用 → 月数十万 ・ 8時間稼働</text>
+            <text x="0" y="22" font-family="'Noto Serif JP', serif" font-size="14" font-weight="700" fill="#a07c2e">うち：チャット1往復 → 24時間稼働 ・ 給料なし</text>
+          </g>
+        </svg>
+      </div>
+      <p class="fig-cap"><em>チャット1往復</em> で、Gmail・カレンダー・リマインドが <em>同時並列で</em> 完結する。</p>
+    </div>
+    <div class="tab-panel" id="det-4">
+      <div class="detail-panel" contenteditable="true" id="sec-4">
+        <p>GmailとGoogleカレンダーをAIが直接操作できる状態にしてあります。なので、こういうことがチャット1往復で終わります。</p>
+        <ul>
+          <li><strong>「来週の水曜14時で〇〇さんと打ち合わせ調整して」</strong> → AIが Gmail で先方とやり取り → カレンダーに登録 → 自分にもリマインド設定、まで全部完結</li>
+          <li><strong>「あの件、どうなった？」</strong> → 過去のメール全件を読み込んで、状況を要約してくれる</li>
+          <li><strong>営業メールの返信チェック</strong> → 自動で巡回して、返信あった案件だけ通知してくれる</li>
+          <li><strong>朝起きたら</strong> → 今日やることのまとめ + 営業返信状況が、整理された状態で届く</li>
+        </ul>
+      </div>
+    </div>
+    <div class="intent">
+      <div class="intent-label">修正意図メモ</div>
+      <textarea placeholder=""></textarea>
+    </div>
+  </div>
+
+  <!-- Card 5: なぜ -->
+  <div class="card">
+    <div class="card-head">
+      <div class="num-row"><div class="num">5</div><h2>なんでこんなことやってるか</h2></div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab(this, 'image-5')">🎨 ビジュアル</button>
+      <button class="tab-btn" onclick="showTab(this, 'viz-5')">📊 図解</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-5')">📝 詳しく</button>
+    </div>
+    <div class="tab-panel active" id="image-5">
+      <div class="figure"><img src="_assets/ai_business_explanation/07_why.png" alt="自社で実証→クライアントへ" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
+    </div>
+    <div class="tab-panel" id="viz-5">
+      <div class="figure">
+        <svg viewBox="0 0 720 240" xmlns="http://www.w3.org/2000/svg">
+          <!-- Stage 1: 10 people, can't afford -->
+          <g transform="translate(20, 50)">
+            <text x="100" y="-12" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#c45c5c" letter-spacing="1.4">中小企業の現実</text>
+            <g fill="#c45c5c" opacity="0.55">
+              <circle cx="20" cy="20" r="9"/><rect x="11" y="30" width="18" height="22" rx="2"/>
+              <circle cx="50" cy="20" r="9"/><rect x="41" y="30" width="18" height="22" rx="2"/>
+              <circle cx="80" cy="20" r="9"/><rect x="71" y="30" width="18" height="22" rx="2"/>
+              <circle cx="110" cy="20" r="9"/><rect x="101" y="30" width="18" height="22" rx="2"/>
+              <circle cx="140" cy="20" r="9"/><rect x="131" y="30" width="18" height="22" rx="2"/>
+              <circle cx="170" cy="20" r="9"/><rect x="161" y="30" width="18" height="22" rx="2"/>
+              <circle cx="20" cy="80" r="9"/><rect x="11" y="90" width="18" height="22" rx="2"/>
+              <circle cx="50" cy="80" r="9"/><rect x="41" y="90" width="18" height="22" rx="2"/>
+              <circle cx="80" cy="80" r="9"/><rect x="71" y="90" width="18" height="22" rx="2"/>
+              <circle cx="110" cy="80" r="9"/><rect x="101" y="90" width="18" height="22" rx="2"/>
+            </g>
+            <line x1="-5" y1="-5" x2="195" y2="125" stroke="#c45c5c" stroke-width="3" opacity="0.7"/>
+            <line x1="195" y1="-5" x2="-5" y2="125" stroke="#c45c5c" stroke-width="3" opacity="0.7"/>
+            <text x="100" y="142" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="13" font-weight="800" fill="#c45c5c">10人雇えない</text>
+            <text x="100" y="158" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#888">→ 諦める</text>
+          </g>
+
+          <!-- Arrow 1 -->
+          <g transform="translate(245, 105)">
+            <path d="M 0 0 L 40 0 M 32 -7 L 40 0 L 32 7" stroke="#c89b4a" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+
+          <!-- Stage 2: 1 person + AI bots = same output -->
+          <g transform="translate(310, 50)">
+            <text x="80" y="-12" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#1f3a5f" letter-spacing="1.4">クロキの場合</text>
+            <!-- person -->
+            <g fill="#1f3a5f">
+              <circle cx="20" cy="22" r="11"/>
+              <rect x="9" y="34" width="22" height="28" rx="3"/>
+            </g>
+            <!-- AI bots -->
+            <g>
+              <rect x="50" y="14" width="20" height="20" rx="4" fill="#c89b4a"/>
+              <circle cx="56" cy="22" r="2" fill="white"/><circle cx="64" cy="22" r="2" fill="white"/>
+              <rect x="55" y="27" width="10" height="2" rx="1" fill="white"/>
+              <rect x="80" y="14" width="20" height="20" rx="4" fill="#c89b4a"/>
+              <circle cx="86" cy="22" r="2" fill="white"/><circle cx="94" cy="22" r="2" fill="white"/>
+              <rect x="85" y="27" width="10" height="2" rx="1" fill="white"/>
+              <rect x="110" y="14" width="20" height="20" rx="4" fill="#c89b4a"/>
+              <circle cx="116" cy="22" r="2" fill="white"/><circle cx="124" cy="22" r="2" fill="white"/>
+              <rect x="115" y="27" width="10" height="2" rx="1" fill="white"/>
+              <rect x="140" y="14" width="20" height="20" rx="4" fill="#c89b4a"/>
+              <circle cx="146" cy="22" r="2" fill="white"/><circle cx="154" cy="22" r="2" fill="white"/>
+              <rect x="145" y="27" width="10" height="2" rx="1" fill="white"/>
+              <rect x="50" y="42" width="20" height="20" rx="4" fill="#c89b4a"/>
+              <circle cx="56" cy="50" r="2" fill="white"/><circle cx="64" cy="50" r="2" fill="white"/>
+              <rect x="55" y="55" width="10" height="2" rx="1" fill="white"/>
+              <rect x="80" y="42" width="20" height="20" rx="4" fill="#c89b4a"/>
+              <circle cx="86" cy="50" r="2" fill="white"/><circle cx="94" cy="50" r="2" fill="white"/>
+              <rect x="85" y="55" width="10" height="2" rx="1" fill="white"/>
+              <rect x="110" y="42" width="20" height="20" rx="4" fill="#c89b4a"/>
+              <circle cx="116" cy="50" r="2" fill="white"/><circle cx="124" cy="50" r="2" fill="white"/>
+              <rect x="115" y="55" width="10" height="2" rx="1" fill="white"/>
+              <rect x="140" y="42" width="20" height="20" rx="4" fill="#c89b4a"/>
+              <circle cx="146" cy="50" r="2" fill="white"/><circle cx="154" cy="50" r="2" fill="white"/>
+              <rect x="145" y="55" width="10" height="2" rx="1" fill="white"/>
+            </g>
+            <!-- lines from person to bots -->
+            <g stroke="#c89b4a" stroke-width="1" opacity="0.5">
+              <line x1="32" y1="42" x2="50" y2="24"/>
+              <line x1="32" y1="42" x2="50" y2="52"/>
+              <line x1="32" y1="42" x2="80" y2="24"/>
+              <line x1="32" y1="42" x2="110" y2="24"/>
+              <line x1="32" y1="42" x2="140" y2="24"/>
+              <line x1="32" y1="42" x2="80" y2="52"/>
+              <line x1="32" y1="42" x2="110" y2="52"/>
+              <line x1="32" y1="42" x2="140" y2="52"/>
+            </g>
+            <text x="80" y="92" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="13" font-weight="800" fill="#1f3a5f">1人 + AI</text>
+            <text x="80" y="142" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="13" font-weight="800" fill="#1f3a5f">= 10人分のアウトプット</text>
+            <text x="80" y="158" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#888">→ 自社で実証中</text>
+          </g>
+
+          <!-- Arrow 2 -->
+          <g transform="translate(515, 105)">
+            <path d="M 0 0 L 40 0 M 32 -7 L 40 0 L 32 7" stroke="#c89b4a" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          </g>
+
+          <!-- Stage 3: package & deliver -->
+          <g transform="translate(575, 65)">
+            <text x="65" y="-12" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" font-weight="800" fill="#a07c2e" letter-spacing="1.4">次のステップ</text>
+            <rect x="0" y="0" width="130" height="100" rx="10" fill="white" stroke="#c89b4a" stroke-width="2"/>
+            <rect x="14" y="14" width="102" height="6" rx="3" fill="#c89b4a"/>
+            <rect x="14" y="28" width="80" height="6" rx="3" fill="#c89b4a" opacity="0.6"/>
+            <rect x="14" y="42" width="90" height="6" rx="3" fill="#c89b4a" opacity="0.6"/>
+            <rect x="14" y="56" width="60" height="6" rx="3" fill="#c89b4a" opacity="0.6"/>
+            <text x="65" y="84" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="800" fill="#a07c2e">パッケージ化</text>
+            <text x="65" y="116" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="11" font-weight="700" fill="#1f3a5f">クライアントへ提供</text>
+            <text x="65" y="132" text-anchor="middle" font-family="'Noto Sans JP', sans-serif" font-size="10" font-weight="500" fill="#888">パッケージ化</text>
+          </g>
+        </svg>
+      </div>
+      <p class="fig-cap">中小企業の <em>「人件費10人分が出せない」</em> という壁を、<br>AIで超える仕組みを <em>自社で実証 → クライアントへ提供</em>。</p>
+    </div>
+    <div class="tab-panel" id="det-5">
+      <div class="detail-panel" contenteditable="true" id="sec-5">
+        <p>普通、中小企業が「全SNSを毎日更新」「全国の見込み客に個別営業」「動画コンテンツを毎週量産」を全部やろうとしたら、<strong>10人以上の人件費</strong>がかかります。だから諦める会社が多い。</p>
+        <p>でも <em>AIで全部代替できたら、1人の社長でも大企業並みのアウトプットが出せる</em>。これは中小企業の勝負軸が完全に変わるレベルの話です。</p>
+        <p>そして、これを<strong>言うだけじゃなくて、自分の事業で人柱になって実証している</strong>のが今の状態。机上の理論じゃなくて、自分自身の会社の毎日の業務がこの仕組みで回ってます。</p>
+        <p>これを実証しきったら、同じ仕組みをパッケージにして<strong>クライアント企業に提供する</strong>予定です。</p>
+      </div>
+    </div>
+    <div class="intent">
+      <div class="intent-label">修正意図メモ</div>
+      <textarea placeholder=""></textarea>
+    </div>
+  </div>
+
+  <!-- Card 6: 他業種への応用 -->
+  <div class="card featured">
+    <div class="card-head">
+      <span class="featured-tag">★ 他業種への応用</span>
+      <div class="num-row"><div class="num">6</div><h2>これ、他の業種にもそのまま応用できます</h2></div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab(this, 'image-6')">🎨 ビジュアル</button>
+      <button class="tab-btn" onclick="showTab(this, 'viz-6')">📊 図解</button>
+      <button class="tab-btn" onclick="showTab(this, 'det-6')">📝 詳しく</button>
+    </div>
+    <div class="tab-panel active" id="image-6">
+      <div class="figure"><img src="_assets/ai_business_explanation/06_industry.png" alt="他業種への応用" style="width:100%; max-width:720px; border-radius:12px; display:block;" /></div>
+    </div>
+    <div class="tab-panel" id="viz-6">
+      <div class="figure">
+        <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg">
+          <!-- Center hub -->
+          <g transform="translate(360, 180)">
+            <circle cx="0" cy="0" r="68" fill="url(#hubGrad)"/>
+            <circle cx="0" cy="0" r="68" fill="none" stroke="white" stroke-width="3"/>
+            <text x="0" y="-12" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="13" font-weight="900" fill="white">個別最適</text>
+            <text x="0" y="8" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="14" font-weight="700" fill="white">×</text>
+            <text x="0" y="28" text-anchor="middle" font-family="'Noto Serif JP', serif" font-size="13" font-weight="900" fill="white">大量自動化</text>
+          </g>
+
+          <!-- Connecting lines -->
+          <g stroke="#c89b4a" stroke-width="2" fill="none" opacity="0.55">
+            <line x1="320" y1="140" x2="180" y2="80"/>
+            <line x1="400" y1="140" x2="540" y2="80"/>
+            <line x1="360" y1="248" x2="360" y2="290"/>
+          </g>
+
+          <!-- Top-left: 医師 -->
+          <g transform="translate(40, 30)">
+            <rect x="0" y="0" width="280" height="120" rx="14" fill="white" stroke="#1f3a5f" stroke-width="1.5"/>
+            <!-- stethoscope icon -->
+            <g transform="translate(20, 20)">
+              <circle cx="14" cy="14" r="14" fill="#1f3a5f"/>
+              <path d="M 14 8 L 14 6 Q 14 0 8 0 Q 2 0 2 6 L 2 12" stroke="white" stroke-width="2.5" fill="none"/>
+              <path d="M 14 8 L 14 6 Q 14 0 20 0 Q 26 0 26 6 L 26 12" stroke="white" stroke-width="2.5" fill="none"/>
+              <circle cx="14" cy="20" r="4" fill="white"/>
+            </g>
+            <text x="60" y="32" font-family="'Noto Serif JP', serif" font-size="17" font-weight="900" fill="#1f3a5f">医師・クリニック</text>
+            <g font-family="'Noto Sans JP', sans-serif" font-size="11.5" fill="#4a4a4a">
+              <text x="20" y="64">・ 集患の半自動化</text>
+              <text x="20" y="82">・ 院内オペ自動化</text>
+              <text x="20" y="100">・ 個人ブランディング</text>
+            </g>
+          </g>
+
+          <!-- Top-right: 士業 -->
+          <g transform="translate(400, 30)">
+            <rect x="0" y="0" width="280" height="120" rx="14" fill="white" stroke="#1f3a5f" stroke-width="1.5"/>
+            <!-- scale icon -->
+            <g transform="translate(20, 14)">
+              <circle cx="14" cy="14" r="14" fill="#1f3a5f"/>
+              <line x1="14" y1="4" x2="14" y2="22" stroke="white" stroke-width="2"/>
+              <line x1="6" y1="10" x2="22" y2="10" stroke="white" stroke-width="2"/>
+              <path d="M 6 10 L 3 18 L 9 18 Z" fill="white"/>
+              <path d="M 22 10 L 19 18 L 25 18 Z" fill="white"/>
+            </g>
+            <text x="60" y="32" font-family="'Noto Serif JP', serif" font-size="17" font-weight="900" fill="#1f3a5f">士業（税理士等）</text>
+            <g font-family="'Noto Sans JP', sans-serif" font-size="11.5" fill="#4a4a4a">
+              <text x="20" y="64">・ 顧問先別レポート</text>
+              <text x="20" y="82">・ 法改正の翻訳配信</text>
+              <text x="20" y="100">・ 新規問合せ自動振分</text>
+            </g>
+          </g>
+
+          <!-- Bottom: 不動産 -->
+          <g transform="translate(220, 240)">
+            <rect x="0" y="0" width="280" height="100" rx="14" fill="white" stroke="#1f3a5f" stroke-width="1.5"/>
+            <!-- building icon -->
+            <g transform="translate(20, 18)">
+              <rect x="0" y="6" width="28" height="22" rx="2" fill="#1f3a5f"/>
+              <rect x="4" y="10" width="4" height="4" fill="white"/>
+              <rect x="12" y="10" width="4" height="4" fill="white"/>
+              <rect x="20" y="10" width="4" height="4" fill="white"/>
+              <rect x="4" y="18" width="4" height="4" fill="white"/>
+              <rect x="12" y="18" width="4" height="4" fill="white"/>
+              <rect x="20" y="18" width="4" height="4" fill="white"/>
+              <polygon points="0,6 14,0 28,6" fill="#1f3a5f"/>
+            </g>
+            <text x="60" y="32" font-family="'Noto Serif JP', serif" font-size="17" font-weight="900" fill="#1f3a5f">不動産業</text>
+            <g font-family="'Noto Sans JP', sans-serif" font-size="11.5" fill="#4a4a4a">
+              <text x="20" y="60">・ 問合せ自動応答 + 個別最適提案</text>
+              <text x="20" y="80">・ 物件動画の量産 + 過去顧客フォロー</text>
+            </g>
+          </g>
+
+          <defs>
+            <radialGradient id="hubGrad">
+              <stop offset="0%" stop-color="#c89b4a"/>
+              <stop offset="100%" stop-color="#a07c2e"/>
+            </radialGradient>
+          </defs>
+        </svg>
+      </div>
+      <p class="fig-cap">3業種すべてに共通する型は <em>「個別最適 × 大量自動化」</em>。<br>奈良の議員さん向けの仕組みが、<em>そのまま医師の集患に応用できる</em>。</p>
+    </div>
+    <div class="tab-panel" id="det-6">
+      <div class="detail-panel" contenteditable="true" id="sec-6">
+        <p>ここまでの仕組みは、僕の事業に特化したものに見えるかもしれませんが、<strong>「個別最適化 × 大量自動化」を必要とする業種すべてに応用可能</strong>です。</p>
+        <h3>医師・クリニック向け</h3>
+        <ul>
+          <li><strong>集患の半自動化</strong> — エリア別・年代別・症状別に、患者層へ刺さるメッセージを個別生成。SNS・LINE・MEO（マップ表示）対策まで一気通貫</li>
+          <li><strong>院内オペの自動化</strong> — 予約調整、問診票回収、治療後フォロー連絡、口コミ依頼、リマインドメールまで全部AIに任せる</li>
+          <li><strong>医師個人のブランディング</strong> — YouTube・Instagramを使った信頼構築。動画編集AIで月10本以上を量産（先生は撮影だけ）</li>
+          <li><strong>論文・学会情報の自動収集</strong> — 自分の専門領域の最新情報を毎日要約配信</li>
+        </ul>
+        <h3>士業（税理士・弁護士・社労士）向け</h3>
+        <ul>
+          <li>顧問先ごとの個別レポート自動生成</li>
+          <li>法改正情報を顧問先別に翻訳配信</li>
+          <li>新規問い合わせの自動振り分け・初回提案文の自動生成</li>
+        </ul>
+        <h3>不動産業向け</h3>
+        <ul>
+          <li>物件問い合わせの自動応答 + 顧客属性に合わせた個別最適提案</li>
+          <li>物件動画の量産（1物件ずつドローン映像 + AIナレーション + テロップ自動編集）</li>
+          <li>過去顧客のフォロー自動化（買い替え・売却タイミングの予兆検知）</li>
+        </ul>
+      </div>
+    </div>
+    <div class="intent">
+      <div class="intent-label">修正意図メモ</div>
+      <textarea placeholder=""></textarea>
+    </div>
+  </div>
+
+  <!-- Memo -->
+  <div class="memo-card">
+    <h3>ゼンからのメモ（クロキさん向け）</h3>
+    <ul>
+      <li><strong>v7：本気のSVG図解にしました。</strong>v6の絵文字＋テキストでは「結局文字」と感じさせていたので、各カードの「ひと目で」タブをすべてインラインSVGで描き直しました。線・図形・色だけで意味が伝わるレベルを目指しています。</li>
+      <li>カード1（奈良議員）：100人グリッド + AI + 色違いメール6通の図で「個別パーソナライズ送信」を可視化</li>
+      <li>カード2（SNS全展開）：中央のマイクから9媒体に放射状に線が伸びる構図</li>
+      <li>カード3（動画編集）：素材バー（赤の言い淀み）→ AI処理 → 完成バー + ショート × 3 の3段構造</li>
+      <li>カード4（Gmail/Cal）：チャット吹き出し → Gmail/Cal/リマインドの並列処理</li>
+      <li>カード5（なぜ）：×印付き10人 → AI付き1人 → パッケージ提供の3ステージ</li>
+      <li>カード6（応用）：中央ハブ + 3業種カードのインフォグラフ構成</li>
+      <li>v1〜v6も残してあります。最終確定したら他は _trash に移動します。</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+function showTab(btn, panelId) {
+  const card = btn.closest('.card, .hook-card');
+  card.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  card.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+// Generate 100 person dots into the奈良 SVG
+window.addEventListener('DOMContentLoaded', () => {
+  const peopleGroup = document.getElementById('people');
+  if (peopleGroup) {
+    let html = '';
+    for (let r = 0; r < 10; r++) {
+      for (let c = 0; c < 10; c++) {
+        const x = c * 22;
+        const y = r * 22;
+        html += `<circle cx="${x+8}" cy="${y+5}" r="4"/><rect x="${x+3}" y="${y+10}" width="10" height="13" rx="1.5"/>`;
+      }
+    }
+    peopleGroup.innerHTML = html;
+  }
+});
+
+function copyAll(btn) {
+  const order = ['sec-hook-lead', 'sec-1','sec-2','sec-3','sec-4','sec-5','sec-6'];
+  const headings = [
+    '【一言で言うと】',
+    '■ 1. 営業を半自動化した — 奈良の議員さんへの実例',
+    '■ 2. SNSを全部、1人で埋める仕組み',
+    '■ 3. 動画編集も、ぜんぶAIがやる',
+    '■ 4. メール・カレンダーの操作もAIに任せられる',
+    '■ 5. なんでこんなことやってるか',
+    '■ 6. これ、他の業種にもそのまま応用できます（医師・士業・不動産）'
+  ];
+  let out = '【クロキがAIで何をやっているか】\n\n';
+  out += '※ なお、この資料そのものも、AIに指示を出して約10分で作成しています。\n\n';
+  order.forEach((id, i) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const text = (el.innerText || el.textContent).trim();
+    if (headings[i]) out += headings[i] + '\n';
+    out += text + '\n\n';
+  });
+  navigator.clipboard.writeText(out.trim()).then(() => {
+    btn.textContent = 'コピーしました';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '本文を全部コピー（先方送信用）';
+      btn.classList.remove('copied');
+    }, 2200);
+  });
+}
+
+function copyIntents(btn) {
+  const intents = document.querySelectorAll('.intent textarea');
+  const sectionTitles = document.querySelectorAll('.card-head h2');
+  let out = '【修正意図メモ一覧】\n\n';
+  let hasContent = false;
+  intents.forEach((ta, i) => {
+    const v = ta.value.trim();
+    if (v) {
+      hasContent = true;
+      const title = sectionTitles[i] ? sectionTitles[i].textContent : `セクション${i+1}`;
+      out += `■ ${title}\n${v}\n\n`;
+    }
+  });
+  if (!hasContent) out = '（修正意図はまだ書かれていません）';
+  navigator.clipboard.writeText(out.trim()).then(() => {
+    btn.textContent = 'コピーしました';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '修正意図だけコピー';
+      btn.classList.remove('copied');
+    }, 2200);
+  });
+}
+</script>
+</body>
+</html>
